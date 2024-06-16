@@ -8,15 +8,28 @@ class FileHandler(private val plugin: Nametag) : IHandler {
     // File Configuration
     private lateinit var config: FileConfiguration
 
+    // Config settings
+    var hideDefaultNametags: Boolean = false
+    var nametagsFormat: List<String> = listOf()
+    var nametagsHeight: Double = 0.0
+
     override fun init() {
+        handler = this;
         this.config = this.plugin.config
         this.config.options().copyDefaults(true)
         this.plugin.saveDefaultConfig()
         this.plugin.saveConfig()
+
+        // Load config settings
+        loadConfigSettings()
     }
 
-    override fun end() {
+    override fun end() {}
 
+    private fun loadConfigSettings() {
+        this.hideDefaultNametags = this.config.getBoolean("hide-default-nametags")
+        this.nametagsFormat = this.config.getStringList("nametag-format.lines").reversed()
+        this.nametagsHeight = this.config.getDouble("nametag-format.line-height")
     }
 
     fun reloadConfig() {
@@ -24,5 +37,10 @@ class FileHandler(private val plugin: Nametag) : IHandler {
         this.config = this.plugin.config
         this.plugin.reloadConfig()
         this.plugin.saveConfig()
+    }
+
+    companion object {
+        // Static-Access
+        lateinit var handler: FileHandler
     }
 }

@@ -6,6 +6,7 @@ import systems.rishon.nametag.entity.NametagData
 import systems.rishon.nametag.entity.NametagEntity
 import systems.rishon.nametag.listeners.Connections
 import systems.rishon.nametag.listeners.PlayerSneak
+import systems.rishon.nametag.tasks.UpdateTagTask
 import systems.rishon.nametag.utils.LoggerUtil
 
 class MainHandler(val plugin: Nametag) : IHandler {
@@ -19,6 +20,9 @@ class MainHandler(val plugin: Nametag) : IHandler {
 
         // Register listeners
         registerListeners()
+
+        // Load tasks
+        loadTasks()
 
         // Load online players
         loadPlayers()
@@ -38,6 +42,10 @@ class MainHandler(val plugin: Nametag) : IHandler {
         val pluginManager: PluginManager = this.plugin.server.pluginManager
         pluginManager.registerEvents(Connections(this), this.plugin)
         pluginManager.registerEvents(PlayerSneak(this), this.plugin)
+    }
+
+    private fun loadTasks() {
+        this.plugin.server.scheduler.runTaskTimerAsynchronously(this.plugin, UpdateTagTask(this), 0, 20)
     }
 
     private fun loadPlayers() {

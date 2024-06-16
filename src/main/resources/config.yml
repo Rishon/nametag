@@ -1,0 +1,7 @@
+hide-default-nametags: true
+
+nametag-format: # PlaceholderAPI support
+  line-height: 0.3
+  lines:
+    - "{player_name}"
+    - "Hello world!"

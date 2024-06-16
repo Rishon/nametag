@@ -1,7 +1,7 @@
 package systems.rishon.nametag.entity
 
 import com.mojang.math.Transformation
-import net.kyori.adventure.text.Component
+import me.clip.placeholderapi.PlaceholderAPI
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket
@@ -17,15 +17,16 @@ import org.bukkit.entity.Player
 import org.bukkit.entity.TextDisplay
 import org.joml.Quaternionf
 import org.joml.Vector3f
+import systems.rishon.api.paper.color.ColorUtil
+import systems.rishon.nametag.handler.FileHandler
 
 class NametagEntity(private val player: Player) {
 
     // Passengers
     private val passengers: MutableList<Display.TextDisplay> = mutableListOf()
 
-    init {
-
-    }
+    // FileHandler
+    private val fileHandler = FileHandler.handler
 
     fun spawn() {
         create()
@@ -33,11 +34,12 @@ class NametagEntity(private val player: Player) {
         val serverPlayer = craftPlayer.handle
         val connection = serverPlayer.connection
 
-        passengers.forEach { passenger ->
-            addPassenger(passenger)
+        this.passengers.forEach { passenger ->
             connection.send(ClientboundAddEntityPacket(passenger))
             sendUpdatePacket(player, passenger)
         }
+
+        setPassengers()
     }
 
     fun spread(player: Player, selfNametag: Boolean = false) {
@@ -45,7 +47,7 @@ class NametagEntity(private val player: Player) {
         val serverPlayer = craftPlayer.handle
         val connection = serverPlayer.connection
 
-        passengers.forEach { passenger ->
+        this.passengers.forEach { passenger ->
             connection.send(ClientboundAddEntityPacket(passenger))
             sendUpdatePacket(player, passenger)
         }
@@ -82,18 +84,23 @@ class NametagEntity(private val player: Player) {
     }
 
     private fun create() {
-        val entity = createEntity()
-        passengers.add(entity)
+        val lines = this.fileHandler.nametagsFormat
+
+        lines.forEach { text ->
+            val entity =
+                createEntity(PlaceholderAPI.setPlaceholders(player, text.replace("{player_name}", player.name)))
+            this.passengers.add(entity)
+        }
     }
 
-    private fun createEntity(): Display.TextDisplay {
+    private fun createEntity(text: String): Display.TextDisplay {
         val craftPlayer = player as CraftPlayer
         val serverPlayer = craftPlayer.handle
         val craftWorld: CraftWorld = player.world as CraftWorld
         val serverLevel = craftWorld.handle
         val passenger: Display.TextDisplay = Display.TextDisplay(EntityType.TEXT_DISPLAY, serverLevel)
         val bukkitPassenger = passenger.bukkitEntity as TextDisplay
-        val json = JSONComponentSerializer.json().serialize(Component.text("Hello, world!"))
+        val json = JSONComponentSerializer.json().serialize(ColorUtil.translate(text))
         val chatComponent = CraftChatMessage.fromJSON(json);
 
         // NMS
@@ -101,23 +108,61 @@ class NametagEntity(private val player: Player) {
         passenger.isNoGravity = true
         passenger.text = chatComponent
         passenger.billboardConstraints = Display.BillboardConstraints.CENTER
-        passenger.setTransformation(
-            Transformation(
-                Vector3f(0.0f, 0.5f, 0.0f), // Translation
-                Quaternionf(0.0f, 0.0f, 0.0f, 1.0f), // Left rotation
-                Vector3f(1.0f, 1.0f, 1.0f), // Scale
-                Quaternionf(0.0f, 0.0f, 0.0f, 1.0f), // Right rotation
-            )
-        )
+        setTransformation(passenger, Vector3f(1.0f, 1.0f, 1.0f), Vector3f(0.0f, 0.0f, 0.0f))
 
         // Bukkit
         bukkitPassenger.alignment = TextDisplay.TextAlignment.CENTER
         return passenger
     }
 
-    private fun addPassenger(entity: Entity) {
-        val bukkitEntity = entity.bukkitEntity
-        this.player.addPassenger(bukkitEntity)
+    private fun setPassengers() {
+        val worldPlayers = this.player.world.players
+
+        // Line height
+        val lineHeight = this.fileHandler.nametagsHeight
+
+        this.passengers.forEachIndexed { index, passenger ->
+            val y = 0.3 + (lineHeight * index)
+            setTransformation(passenger, Vector3f(1.0f, 1.0f, 1.0f), Vector3f(0.0f, y.toFloat(), 0.0f))
+            player.addPassenger(passenger.bukkitEntity)
+            sendUpdatePacket(player, passenger)
+            // Update to all players
+            worldPlayers.forEach { worldPlayer ->
+                if (player.uniqueId == worldPlayer.uniqueId) return@forEach
+                sendUpdatePacket(worldPlayer, passenger)
+            }
+        }
+    }
+
+    fun updateTagForPlayer() {
+        val lines = this.fileHandler.nametagsFormat
+        val worldPlayers = this.player.world.players
+
+        this.passengers.forEachIndexed { index, passenger ->
+            passenger.text = CraftChatMessage.fromJSON(
+                JSONComponentSerializer.json().serialize(
+                    ColorUtil.translate(
+                        PlaceholderAPI.setPlaceholders(
+                            player, lines[index].replace("{player_name}", player.name)
+                        )
+                    )
+                )
+            )
+            worldPlayers.forEach { worldPlayer ->
+                sendUpdatePacket(worldPlayer, passenger)
+            }
+        }
+    }
+
+    private fun setTransformation(passenger: Display.TextDisplay, scale: Vector3f, translation: Vector3f) {
+        passenger.setTransformation(
+            Transformation(
+                translation, // Translation
+                Quaternionf(0.0f, 0.0f, 0.0f, 1.0f), // Left rotation
+                scale, // Scale
+                Quaternionf(0.0f, 0.0f, 0.0f, 1.0f), // Right rotation
+            )
+        )
     }
 
     private fun sendUpdatePacket(player: Player, entity: Entity) {
@@ -134,6 +179,4 @@ class NametagEntity(private val player: Player) {
     private fun getDataWatcher(entity: Entity): SynchedEntityData {
         return entity.entityData
     }
-
-    class Data(private val height: Float) {}
 }
