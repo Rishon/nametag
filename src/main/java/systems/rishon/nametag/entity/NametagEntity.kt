@@ -27,6 +27,60 @@ class NametagEntity(private val player: Player) {
 
     }
 
+    fun spawn() {
+        create()
+        val craftPlayer = player as CraftPlayer
+        val serverPlayer = craftPlayer.handle
+        val connection = serverPlayer.connection
+
+        passengers.forEach { passenger ->
+            addPassenger(passenger)
+            connection.send(ClientboundAddEntityPacket(passenger))
+            sendUpdatePacket(player, passenger)
+        }
+    }
+
+    fun spread(player: Player, selfNametag: Boolean = false) {
+        val craftPlayer = player as CraftPlayer
+        val serverPlayer = craftPlayer.handle
+        val connection = serverPlayer.connection
+
+        passengers.forEach { passenger ->
+            connection.send(ClientboundAddEntityPacket(passenger))
+            sendUpdatePacket(player, passenger)
+        }
+    }
+
+    fun destroyForPlayer() {
+        this.passengers.forEach { passenger ->
+            val craftPlayer = player as CraftPlayer
+            val serverPlayer = craftPlayer.handle
+            serverPlayer.connection.send(ClientboundRemoveEntitiesPacket(passenger.id))
+        }
+    }
+
+    fun destroyForAll() {
+        this.player.server.onlinePlayers.forEach { player ->
+            this.passengers.forEach { passenger ->
+                val craftPlayer = player as CraftPlayer
+                val serverPlayer = craftPlayer.handle
+                serverPlayer.connection.send(ClientboundRemoveEntitiesPacket(passenger.id))
+            }
+        }
+    }
+
+    fun handleSneak(isSneaking: Boolean) {
+        val worldPlayers = this.player.world.players
+        val textOpacityBytes: Byte = if (isSneaking) -120 else 0
+
+        this.passengers.forEach { passenger ->
+            worldPlayers.forEach { worldPlayer ->
+                passenger.textOpacity = textOpacityBytes
+                sendUpdatePacket(worldPlayer, passenger)
+            }
+        }
+    }
+
     private fun create() {
         val entity = createEntity()
         passengers.add(entity)
@@ -61,47 +115,9 @@ class NametagEntity(private val player: Player) {
         return passenger
     }
 
-    fun spawn() {
-        create()
-        val craftPlayer = player as CraftPlayer
-        val serverPlayer = craftPlayer.handle
-        val connection = serverPlayer.connection
-
-        passengers.forEach { passenger ->
-            addPassenger(passenger)
-            connection.send(ClientboundAddEntityPacket(passenger))
-            sendUpdatePacket(player, passenger)
-        }
-    }
-
     private fun addPassenger(entity: Entity) {
         val bukkitEntity = entity.bukkitEntity
         this.player.addPassenger(bukkitEntity)
-    }
-
-    fun spread(player: Player) {
-        val craftPlayer = player as CraftPlayer
-        val serverPlayer = craftPlayer.handle
-        val connection = serverPlayer.connection
-
-        passengers.forEach { passenger ->
-            connection.send(ClientboundAddEntityPacket(passenger))
-            sendUpdatePacket(player, passenger)
-        }
-    }
-
-    fun destroyForPlayer() {
-
-    }
-
-    fun destroyForAll() {
-        this.player.server.onlinePlayers.forEach { player ->
-            this.passengers.forEach { passenger ->
-                val craftPlayer = player as CraftPlayer
-                val serverPlayer = craftPlayer.handle
-                serverPlayer.connection.send(ClientboundRemoveEntitiesPacket(passenger.id))
-            }
-        }
     }
 
     private fun sendUpdatePacket(player: Player, entity: Entity) {
@@ -119,6 +135,5 @@ class NametagEntity(private val player: Player) {
         return entity.entityData
     }
 
-    class Data(private val height: Float) {
-    }
+    class Data(private val height: Float) {}
 }

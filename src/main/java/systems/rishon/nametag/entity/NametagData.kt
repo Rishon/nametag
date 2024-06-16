@@ -1,7 +1,6 @@
 package systems.rishon.nametag.entity
 
 import org.bukkit.entity.Player
-import systems.rishon.nametag.handler.MainHandler
 import java.util.UUID
 
 class NametagData() {

@@ -1,16 +1,20 @@
 package systems.rishon.nametag
 
 import org.bukkit.plugin.java.JavaPlugin
+import systems.rishon.api.paper.runnable.SchedulerUtil
+import systems.rishon.nametag.handler.FileHandler
 import systems.rishon.nametag.handler.IHandler
 import systems.rishon.nametag.handler.MainHandler
 
 class Nametag : JavaPlugin() {
 
     // Handlers
-    private val handlers: MutableList<IHandler> = mutableListOf()
+    private lateinit var handlers: MutableList<IHandler>
 
     override fun onEnable() {
         plugin = this
+        schedulerUtil = SchedulerUtil(this)
+
         registerHandlers()
         this.logger.info("${this.name} has been enabled!")
     }
@@ -21,11 +25,18 @@ class Nametag : JavaPlugin() {
     }
 
     private fun registerHandlers() {
-        this.handlers.add(MainHandler(this))
-        this.handlers.forEach { it.init() }
+        this.handlers = mutableListOf(FileHandler(this), MainHandler(this))
+        this.handlers.forEach {
+            this.logger.info("Initializing handler: ${it.javaClass.simpleName}")
+            it.init()
+            this.logger.info("Handler initialized: ${it.javaClass.simpleName}")
+        }
     }
 
     companion object {
         lateinit var plugin: Nametag
+
+        // Scheduler Util
+        lateinit var schedulerUtil: SchedulerUtil
     }
 }
