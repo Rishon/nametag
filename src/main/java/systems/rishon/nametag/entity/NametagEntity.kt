@@ -72,15 +72,19 @@ class NametagEntity(private val player: Player) {
     }
 
     fun handleSneak(isSneaking: Boolean) {
-        val worldPlayers = this.player.world.players
-        val textOpacityBytes: Byte = if (isSneaking) -120 else 0
+        val opacityConfigValue = this.fileHandler.textOpacity
+        val textOpacityBytes: Byte =
+            if (isSneaking) calculateOpacityValue(opacityConfigValue) else calculateOpacityValue(1.0)
 
         this.passengers.forEach { passenger ->
-            worldPlayers.forEach { worldPlayer ->
-                passenger.textOpacity = textOpacityBytes
-                sendUpdatePacket(worldPlayer, passenger)
-            }
+            passenger.textOpacity = textOpacityBytes
+            updateForWorldPlayers(true)
         }
+    }
+
+    private fun calculateOpacityValue(opacity: Double): Byte {
+        val clampedOpacity = opacity.coerceIn(0.0, 1.0)
+        return (128 - (clampedOpacity * 128).toInt()).toByte()
     }
 
     private fun create() {
@@ -112,12 +116,11 @@ class NametagEntity(private val player: Player) {
 
         // Bukkit
         bukkitPassenger.alignment = TextDisplay.TextAlignment.CENTER
+        bukkitPassenger.lineWidth = 200
         return passenger
     }
 
-    private fun setPassengers() {
-        val worldPlayers = this.player.world.players
-
+    fun setPassengers() {
         // Line height
         val lineHeight = this.fileHandler.nametagsHeight
 
@@ -125,18 +128,13 @@ class NametagEntity(private val player: Player) {
             val y = 0.3 + (lineHeight * index)
             setTransformation(passenger, Vector3f(1.0f, 1.0f, 1.0f), Vector3f(0.0f, y.toFloat(), 0.0f))
             player.addPassenger(passenger.bukkitEntity)
-            sendUpdatePacket(player, passenger)
             // Update to all players
-            worldPlayers.forEach { worldPlayer ->
-                if (player.uniqueId == worldPlayer.uniqueId) return@forEach
-                sendUpdatePacket(worldPlayer, passenger)
-            }
+            updateForWorldPlayers(true)
         }
     }
 
     fun updateTagForPlayer() {
         val lines = this.fileHandler.nametagsFormat
-        val worldPlayers = this.player.world.players
 
         this.passengers.forEachIndexed { index, passenger ->
             passenger.text = CraftChatMessage.fromJSON(
@@ -148,7 +146,16 @@ class NametagEntity(private val player: Player) {
                     )
                 )
             )
+            updateForWorldPlayers(true)
+        }
+    }
+
+    private fun updateForWorldPlayers(includeSelf: Boolean) {
+        val worldPlayers = this.player.world.players
+
+        this.passengers.forEach { passenger ->
             worldPlayers.forEach { worldPlayer ->
+                if (!includeSelf && player.uniqueId == worldPlayer.uniqueId) return@forEach
                 sendUpdatePacket(worldPlayer, passenger)
             }
         }

@@ -2,9 +2,11 @@ package systems.rishon.nametag.handler
 
 import org.bukkit.plugin.PluginManager
 import systems.rishon.nametag.Nametag
+import systems.rishon.nametag.command.NametagCommand
 import systems.rishon.nametag.entity.NametagData
 import systems.rishon.nametag.entity.NametagEntity
 import systems.rishon.nametag.listeners.Connections
+import systems.rishon.nametag.listeners.PlayerDeath
 import systems.rishon.nametag.listeners.PlayerSneak
 import systems.rishon.nametag.tasks.UpdateTagTask
 import systems.rishon.nametag.utils.LoggerUtil
@@ -18,8 +20,9 @@ class MainHandler(val plugin: Nametag) : IHandler {
         // Initialize data
         this.nametagData = NametagData()
 
-        // Register listeners
+        // Register listeners and commands
         registerListeners()
+        registerCommands()
 
         // Load tasks
         loadTasks()
@@ -42,6 +45,7 @@ class MainHandler(val plugin: Nametag) : IHandler {
         val pluginManager: PluginManager = this.plugin.server.pluginManager
         pluginManager.registerEvents(Connections(this), this.plugin)
         pluginManager.registerEvents(PlayerSneak(this), this.plugin)
+        pluginManager.registerEvents(PlayerDeath(this), this.plugin)
     }
 
     private fun loadTasks() {
@@ -61,5 +65,9 @@ class MainHandler(val plugin: Nametag) : IHandler {
                 }
             }
         }
+    }
+
+    private fun registerCommands() {
+        this.plugin.getCommand("nametag")?.setExecutor(NametagCommand())
     }
 }

@@ -12,6 +12,7 @@ class FileHandler(private val plugin: Nametag) : IHandler {
     var hideDefaultNametags: Boolean = false
     var nametagsFormat: List<String> = listOf()
     var nametagsHeight: Double = 0.0
+    var textOpacity: Double = 0.0
 
     override fun init() {
         handler = this;
@@ -30,13 +31,17 @@ class FileHandler(private val plugin: Nametag) : IHandler {
         this.hideDefaultNametags = this.config.getBoolean("hide-default-nametags")
         this.nametagsFormat = this.config.getStringList("nametag-format.lines").reversed()
         this.nametagsHeight = this.config.getDouble("nametag-format.line-height")
+        this.textOpacity = this.config.getDouble("nametag-format.text-opacity-on-sneak")
     }
 
     fun reloadConfig() {
         // Reload the config
-        this.config = this.plugin.config
         this.plugin.reloadConfig()
         this.plugin.saveConfig()
+        this.config = this.plugin.config
+
+        // Load config settings
+        loadConfigSettings()
     }
 
     companion object {
