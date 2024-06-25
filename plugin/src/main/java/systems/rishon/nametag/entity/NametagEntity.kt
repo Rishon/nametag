@@ -3,12 +3,7 @@ package systems.rishon.nametag.entity
 import com.mojang.math.Transformation
 import me.clip.placeholderapi.PlaceholderAPI
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket
-import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket
-import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket
-import net.minecraft.network.syncher.SynchedEntityData
 import net.minecraft.world.entity.Display
-import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import org.bukkit.craftbukkit.CraftWorld
 import org.bukkit.craftbukkit.entity.CraftPlayer
@@ -18,6 +13,7 @@ import org.bukkit.entity.TextDisplay
 import org.joml.Quaternionf
 import org.joml.Vector3f
 import systems.rishon.api.paper.color.ColorUtil
+import systems.rishon.nametag.Nametag
 import systems.rishon.nametag.handler.FileHandler
 
 class NametagEntity(private val player: Player) {
@@ -28,46 +24,43 @@ class NametagEntity(private val player: Player) {
     // FileHandler
     private val fileHandler = FileHandler.handler
 
-    fun spawn() {
-        create()
-        val craftPlayer = player as CraftPlayer
-        val serverPlayer = craftPlayer.handle
-        val connection = serverPlayer.connection
+    fun spawn(shouldCreate: Boolean) {
+        if (shouldCreate) create()
 
         this.passengers.forEach { passenger ->
-            connection.send(ClientboundAddEntityPacket(passenger))
-            sendUpdatePacket(player, passenger)
+            Nametag.getPacketManager().ClientAddEntityPacket(player, passenger)
+            Nametag.getPacketManager().sendUpdatePacket(player, passenger)
         }
 
         setPassengers()
     }
 
     fun spread(player: Player, selfNametag: Boolean = false) {
-        val craftPlayer = player as CraftPlayer
-        val serverPlayer = craftPlayer.handle
-        val connection = serverPlayer.connection
-
         this.passengers.forEach { passenger ->
-            connection.send(ClientboundAddEntityPacket(passenger))
-            sendUpdatePacket(player, passenger)
-        }
-    }
-
-    fun destroyForPlayer() {
-        this.passengers.forEach { passenger ->
-            val craftPlayer = player as CraftPlayer
-            val serverPlayer = craftPlayer.handle
-            serverPlayer.connection.send(ClientboundRemoveEntitiesPacket(passenger.id))
+            Nametag.getPacketManager().ClientAddEntityPacket(player, passenger)
+            Nametag.getPacketManager().sendUpdatePacket(player, passenger)
         }
     }
 
     fun destroyForAll() {
         this.player.server.onlinePlayers.forEach { player ->
             this.passengers.forEach { passenger ->
-                val craftPlayer = player as CraftPlayer
-                val serverPlayer = craftPlayer.handle
-                serverPlayer.connection.send(ClientboundRemoveEntitiesPacket(passenger.id))
+                Nametag.getPacketManager().ClientRemoveEntityPacket(player, passenger.id)
             }
+        }
+    }
+
+    fun destroyForPlayer(player: Player) {
+        this.passengers.forEach { passenger ->
+            Nametag.getPacketManager().ClientRemoveEntityPacket(player, passenger.id)
+        }
+    }
+
+    fun updatePosition() {
+        val craftPlayer = player as CraftPlayer
+        this.passengers.forEach { passenger ->
+            passenger.moveTo(craftPlayer.handle.position())
+            updateForWorldPlayers(true)
         }
     }
 
@@ -121,6 +114,8 @@ class NametagEntity(private val player: Player) {
     }
 
     fun setPassengers() {
+        // Reset passengers
+        player.passengers.clear()
         // Line height
         val lineHeight = this.fileHandler.nametagsHeight
 
@@ -156,7 +151,7 @@ class NametagEntity(private val player: Player) {
         this.passengers.forEach { passenger ->
             worldPlayers.forEach { worldPlayer ->
                 if (!includeSelf && player.uniqueId == worldPlayer.uniqueId) return@forEach
-                sendUpdatePacket(worldPlayer, passenger)
+                Nametag.getPacketManager().sendUpdatePacket(worldPlayer, passenger)
             }
         }
     }
@@ -170,20 +165,5 @@ class NametagEntity(private val player: Player) {
                 Quaternionf(0.0f, 0.0f, 0.0f, 1.0f), // Right rotation
             )
         )
-    }
-
-    private fun sendUpdatePacket(player: Player, entity: Entity) {
-        val craftPlayer = player as CraftPlayer
-        val serverPlayer = craftPlayer.handle
-        val metas: List<SynchedEntityData.DataValue<*>?>? = getDataWatcher(entity).nonDefaultValues
-        if (metas != null && !metas.isEmpty()) serverPlayer.connection.send(
-            ClientboundSetEntityDataPacket(
-                entity.id, metas
-            )
-        )
-    }
-
-    private fun getDataWatcher(entity: Entity): SynchedEntityData {
-        return entity.entityData
     }
 }

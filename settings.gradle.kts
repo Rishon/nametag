@@ -5,3 +5,5 @@ pluginManagement {
 }
 
 rootProject.name = "nametag"
+
+include("plugin", "common", "v1_20_6", "v1_21")

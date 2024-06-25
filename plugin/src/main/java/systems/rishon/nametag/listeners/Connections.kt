@@ -17,7 +17,7 @@ class Connections(private val handler: MainHandler) : Listener {
 
         Nametag.schedulerUtil.runTaskAsync {
             val nameTagEntity = NametagEntity(player)
-            nameTagEntity.spawn()
+            nameTagEntity.spawn(true)
             this.handler.nametagData.addPlayerNametag(player, nameTagEntity)
 
             // Spread nametag to all players in the world

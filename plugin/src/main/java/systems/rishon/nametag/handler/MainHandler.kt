@@ -8,6 +8,7 @@ import systems.rishon.nametag.entity.NametagEntity
 import systems.rishon.nametag.listeners.Connections
 import systems.rishon.nametag.listeners.PlayerDeath
 import systems.rishon.nametag.listeners.PlayerSneak
+import systems.rishon.nametag.listeners.PlayerTeleport
 import systems.rishon.nametag.tasks.UpdateTagTask
 import systems.rishon.nametag.utils.LoggerUtil
 
@@ -36,7 +37,7 @@ class MainHandler(val plugin: Nametag) : IHandler {
         this.plugin.server.onlinePlayers.forEach { player ->
             val nameTagEntity = this.nametagData.getPlayerNametag(player.uniqueId)
             if (nameTagEntity == null) return@forEach
-            nameTagEntity.destroyForAll()
+            nameTagEntity.destroyForPlayer(player)
         }
     }
 
@@ -46,6 +47,7 @@ class MainHandler(val plugin: Nametag) : IHandler {
         pluginManager.registerEvents(Connections(this), this.plugin)
         pluginManager.registerEvents(PlayerSneak(this), this.plugin)
         pluginManager.registerEvents(PlayerDeath(this), this.plugin)
+        pluginManager.registerEvents(PlayerTeleport(this), this.plugin)
     }
 
     private fun loadTasks() {
@@ -56,7 +58,7 @@ class MainHandler(val plugin: Nametag) : IHandler {
         Nametag.schedulerUtil.runTaskAsync {
             this.plugin.server.onlinePlayers.forEach { player ->
                 val nameTagEntity = NametagEntity(player)
-                nameTagEntity.spawn()
+                nameTagEntity.spawn(true)
                 this.nametagData.addPlayerNametag(player, nameTagEntity)
 
                 player.world.players.forEach { worldPlayer ->

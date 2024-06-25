@@ -10,7 +10,7 @@ $ cd nametag
 ## Build
 
 ``
-./gradlew clean :shadowJar
+./gradlew clean :plugin:shadowJar
 ``
 
 ## Run
