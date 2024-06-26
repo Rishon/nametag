@@ -20,6 +20,7 @@ class Nametag : JavaPlugin() {
     override fun onEnable() {
         plugin = this
         handleServerVersion()
+
         schedulerUtil = SchedulerUtil(this)
 
         registerHandlers()

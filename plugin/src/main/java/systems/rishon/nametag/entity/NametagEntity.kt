@@ -5,6 +5,8 @@ import me.clip.placeholderapi.PlaceholderAPI
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer
 import net.minecraft.world.entity.Display
 import net.minecraft.world.entity.EntityType
+import org.bukkit.GameMode
+import org.bukkit.World
 import org.bukkit.craftbukkit.CraftWorld
 import org.bukkit.craftbukkit.entity.CraftPlayer
 import org.bukkit.craftbukkit.util.CraftChatMessage
@@ -15,6 +17,7 @@ import org.joml.Vector3f
 import systems.rishon.api.paper.color.ColorUtil
 import systems.rishon.nametag.Nametag
 import systems.rishon.nametag.handler.FileHandler
+import java.util.concurrent.CompletableFuture
 
 class NametagEntity(private val player: Player) {
 
@@ -32,7 +35,7 @@ class NametagEntity(private val player: Player) {
             Nametag.getPacketManager().sendUpdatePacket(player, passenger)
         }
 
-        setPassengers()
+        setPassengers(player.world)
     }
 
     fun spread(player: Player, selfNametag: Boolean = false) {
@@ -40,6 +43,8 @@ class NametagEntity(private val player: Player) {
             Nametag.getPacketManager().ClientAddEntityPacket(player, passenger)
             Nametag.getPacketManager().sendUpdatePacket(player, passenger)
         }
+
+        setPassengers(player.world)
     }
 
     fun destroyForAll() {
@@ -57,9 +62,8 @@ class NametagEntity(private val player: Player) {
     }
 
     fun updatePosition() {
-        val craftPlayer = player as CraftPlayer
         this.passengers.forEach { passenger ->
-            passenger.moveTo(craftPlayer.handle.position())
+            passenger.moveTo((player as CraftPlayer).handle.position())
             updateForWorldPlayers(true)
         }
     }
@@ -101,7 +105,7 @@ class NametagEntity(private val player: Player) {
         val chatComponent = CraftChatMessage.fromJSON(json);
 
         // NMS
-        passenger.moveTo(serverPlayer.position())
+        passenger.moveTo(serverPlayer.position().add(0.0, -50.0, 0.0))
         passenger.isNoGravity = true
         passenger.text = chatComponent
         passenger.billboardConstraints = Display.BillboardConstraints.CENTER
@@ -113,20 +117,31 @@ class NametagEntity(private val player: Player) {
         return passenger
     }
 
-    fun setPassengers() {
-        // Reset passengers
-        player.passengers.clear()
+    fun setPassengers(world: World) {
+        if (this.player.gameMode == GameMode.SPECTATOR) return
+        val serverPlayer = (this.player as CraftPlayer).handle
+
         // Line height
         val lineHeight = this.fileHandler.nametagsHeight
 
-        this.passengers.forEachIndexed { index, passenger ->
-            val y = 0.3 + (lineHeight * index)
-            setTransformation(passenger, Vector3f(1.0f, 1.0f, 1.0f), Vector3f(0.0f, y.toFloat(), 0.0f))
-            player.addPassenger(passenger.bukkitEntity)
-            // Update to all players
-            updateForWorldPlayers(true)
+        world.players.forEach { worldPlayer ->
+            var previousPassenger: Display.TextDisplay? = null
+            this.passengers.forEachIndexed { i, pass ->
+                val y = 0.3 + (lineHeight * i)
+                setTransformation(pass, Vector3f(1.0f, 1.0f, 1.0f), Vector3f(0.0f, y.toFloat(), 0.0f))
+
+                if (previousPassenger != null) Nametag.getPacketManager()
+                    .ClientSetPassengersPacket(worldPlayer, pass, previousPassenger)
+                previousPassenger = pass
+            }
+
+            if (previousPassenger != null) Nametag.getPacketManager()
+                .ClientSetPassengersPacket(worldPlayer, serverPlayer, previousPassenger)
         }
+
+        updateForWorldPlayers(true)
     }
+
 
     fun updateTagForPlayer() {
         val lines = this.fileHandler.nametagsFormat
@@ -145,13 +160,15 @@ class NametagEntity(private val player: Player) {
         }
     }
 
-    private fun updateForWorldPlayers(includeSelf: Boolean) {
-        val worldPlayers = this.player.world.players
+    private fun updateForWorldPlayers(includeSelf: Boolean): CompletableFuture<Void> {
+        return CompletableFuture.runAsync {
+            val worldPlayers = this.player.world.players
 
-        this.passengers.forEach { passenger ->
-            worldPlayers.forEach { worldPlayer ->
-                if (!includeSelf && player.uniqueId == worldPlayer.uniqueId) return@forEach
-                Nametag.getPacketManager().sendUpdatePacket(worldPlayer, passenger)
+            this.passengers.forEach { passenger ->
+                worldPlayers.forEach { worldPlayer ->
+                    if (!includeSelf && player.uniqueId == worldPlayer.uniqueId) return@forEach
+                    Nametag.getPacketManager().sendUpdatePacket(worldPlayer, passenger)
+                }
             }
         }
     }

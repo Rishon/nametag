@@ -11,6 +11,9 @@ class UpdateTagTask(private val handler: MainHandler) : Runnable {
             val uuid = player.uniqueId
             val nametagEntity = this.handler.nametagData.getPlayerNametag(uuid) ?: return@forEach
             nametagEntity.updateTagForPlayer()
+            nametagEntity.updatePosition()
+            nametagEntity.setPassengers(player.world)
+
         }
     }
 }

@@ -20,9 +20,10 @@ class PlayerDeath(private val handler: MainHandler) : Listener {
     private fun onPlayerRespawn(event: PlayerPostRespawnEvent) {
         val player = event.player
         val nametagEntity = this.handler.nametagData.getPlayerNametag(player.uniqueId) ?: return
-        event.respawnedLocation.world.players.forEach {
+        val respawnedWorld = event.respawnedLocation.world ?: return
+
+        respawnedWorld.players.forEach {
             nametagEntity.spread(it)
-            nametagEntity.setPassengers()
         }
     }
 

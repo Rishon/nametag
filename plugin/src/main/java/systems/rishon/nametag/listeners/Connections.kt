@@ -24,8 +24,10 @@ class Connections(private val handler: MainHandler) : Listener {
             player.world.players.forEach { worldPlayer ->
                 if (player.uniqueId == worldPlayer.uniqueId) return@forEach
                 nameTagEntity.spread(worldPlayer)
+
                 val worldPlayerNameTagEntity = this.handler.nametagData.getPlayerNametag(worldPlayer.uniqueId)
                 if (worldPlayerNameTagEntity == null) return@forEach
+
                 worldPlayerNameTagEntity.spread(player)
             }
         }

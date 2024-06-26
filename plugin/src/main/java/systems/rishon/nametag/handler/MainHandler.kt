@@ -9,6 +9,7 @@ import systems.rishon.nametag.listeners.Connections
 import systems.rishon.nametag.listeners.PlayerDeath
 import systems.rishon.nametag.listeners.PlayerSneak
 import systems.rishon.nametag.listeners.PlayerTeleport
+import systems.rishon.nametag.listeners.WorldTeleport
 import systems.rishon.nametag.tasks.UpdateTagTask
 import systems.rishon.nametag.utils.LoggerUtil
 
@@ -48,6 +49,7 @@ class MainHandler(val plugin: Nametag) : IHandler {
         pluginManager.registerEvents(PlayerSneak(this), this.plugin)
         pluginManager.registerEvents(PlayerDeath(this), this.plugin)
         pluginManager.registerEvents(PlayerTeleport(this), this.plugin)
+        pluginManager.registerEvents(WorldTeleport(this), this.plugin)
     }
 
     private fun loadTasks() {
@@ -61,7 +63,9 @@ class MainHandler(val plugin: Nametag) : IHandler {
                 nameTagEntity.spawn(true)
                 this.nametagData.addPlayerNametag(player, nameTagEntity)
 
-                player.world.players.forEach { worldPlayer ->
+                val playerWorld = player.world
+
+                playerWorld.players.forEach { worldPlayer ->
                     if (player.uniqueId == worldPlayer.uniqueId) return@forEach
                     nameTagEntity.spread(worldPlayer)
                 }

@@ -13,6 +13,10 @@ interface IPacket {
 
     }
 
+    fun ClientSetPassengersPacket(player: Player, entity: Entity, passenger: Entity) {
+
+    }
+
     fun sendUpdatePacket(player: Player, entity: Entity) {
 
     }
