@@ -17,6 +17,7 @@ import org.joml.Vector3f
 import systems.rishon.api.paper.color.ColorUtil
 import systems.rishon.nametag.Nametag
 import systems.rishon.nametag.handler.FileHandler
+import systems.rishon.nametag.handler.MainHandler
 import java.util.concurrent.CompletableFuture
 
 class NametagEntity(private val player: Player) {
@@ -88,8 +89,12 @@ class NametagEntity(private val player: Player) {
         val lines = this.fileHandler.nametagsFormat
 
         lines.forEach { text ->
-            val entity =
-                createEntity(PlaceholderAPI.setPlaceholders(player, text.replace("{player_name}", player.name)))
+            val entity = createEntity(
+                formatName(
+                    player, text.replace("{player_name}", player.name)
+                )
+            )
+
             this.passengers.add(entity)
         }
     }
@@ -150,7 +155,7 @@ class NametagEntity(private val player: Player) {
             passenger.text = CraftChatMessage.fromJSON(
                 JSONComponentSerializer.json().serialize(
                     ColorUtil.translate(
-                        PlaceholderAPI.setPlaceholders(
+                        formatName(
                             player, lines[index].replace("{player_name}", player.name)
                         )
                     )
@@ -182,5 +187,13 @@ class NametagEntity(private val player: Player) {
                 Quaternionf(0.0f, 0.0f, 0.0f, 1.0f), // Right rotation
             )
         )
+    }
+
+    private fun formatName(player: Player, name: String): String {
+        return if (MainHandler.getHandler().placeholderAPI!!) {
+            PlaceholderAPI.setPlaceholders(player, name)
+        } else {
+            name
+        }
     }
 }

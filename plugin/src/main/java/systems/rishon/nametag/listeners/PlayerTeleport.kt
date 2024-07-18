@@ -13,24 +13,19 @@ class PlayerTeleport(private val handler: MainHandler) : Listener {
     private fun onPlayerTeleport(event: PlayerTeleportEvent) {
         val player = event.player
         if (player.gameMode == GameMode.SPECTATOR) return
-        val fromWorld = event.from.world ?: return
         val toWorld = event.to.world ?: return
-        val cause = event.cause
 
         val nametagEntity = this.handler.nametagData.getPlayerNametag(player.uniqueId) ?: return
 
-        if (fromWorld.name == toWorld.name) {
-            nametagEntity.updatePosition()
-            nametagEntity.setPassengers(fromWorld)
-            return
-        }
+        nametagEntity.destroyForAll()
 
-        if (cause == PlayerTeleportEvent.TeleportCause.UNKNOWN) {
-            nametagEntity.destroyForAll()
+        toWorld.players.forEach {
+            nametagEntity.spread(it)
 
-            toWorld.players.forEach {
-                nametagEntity.spread(it)
-            }
+            val worldPlayerNameTagEntity = this.handler.nametagData.getPlayerNametag(it.uniqueId)
+            if (worldPlayerNameTagEntity == null) return@forEach
+
+            worldPlayerNameTagEntity.spread(player)
         }
     }
 }

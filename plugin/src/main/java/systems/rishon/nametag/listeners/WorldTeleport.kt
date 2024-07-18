@@ -24,6 +24,11 @@ class WorldTeleport(private val handler: MainHandler) : Listener {
 
         newWorld.players.forEach {
             nametagEntity.spread(it)
+
+            val worldPlayerNameTagEntity = this.handler.nametagData.getPlayerNametag(it.uniqueId)
+            if (worldPlayerNameTagEntity == null) return@forEach
+
+            worldPlayerNameTagEntity.spread(player)
         }
     }
 }

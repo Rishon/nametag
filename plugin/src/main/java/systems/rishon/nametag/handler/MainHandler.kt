@@ -18,9 +18,17 @@ class MainHandler(val plugin: Nametag) : IHandler {
     // Data
     lateinit var nametagData: NametagData
 
+    // PlaceholderAPI
+    var placeholderAPI: Boolean? = null
+
     override fun init() {
+        handler = this
+
         // Initialize data
         this.nametagData = NametagData()
+
+        // Check if PlaceholderAPI is installed
+        this.placeholderAPI = this.plugin.server.pluginManager.getPlugin("PlaceholderAPI") != null
 
         // Register listeners and commands
         registerListeners()
@@ -75,5 +83,14 @@ class MainHandler(val plugin: Nametag) : IHandler {
 
     private fun registerCommands() {
         this.plugin.getCommand("nametag")?.setExecutor(NametagCommand())
+    }
+
+    companion object {
+        // Static-Access
+        private lateinit var handler: MainHandler
+
+        fun getHandler(): MainHandler {
+            return handler
+        }
     }
 }
