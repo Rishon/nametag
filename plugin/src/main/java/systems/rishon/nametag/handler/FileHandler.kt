@@ -14,6 +14,8 @@ class FileHandler(private val plugin: Nametag) : IHandler {
     var nametagsHeight: Double = 0.0
     var textOpacity: Double = 0.0
 
+    var distanceViewNametags: Double = 24.0
+
     override fun init() {
         handler = this;
         this.config = this.plugin.config
@@ -32,6 +34,8 @@ class FileHandler(private val plugin: Nametag) : IHandler {
         this.nametagsFormat = this.config.getStringList("nametag-format.lines").reversed()
         this.nametagsHeight = this.config.getDouble("nametag-format.line-height")
         this.textOpacity = this.config.getDouble("nametag-format.text-opacity-on-sneak")
+
+        this.distanceViewNametags = this.config.getDouble("distance-view-nametags")
     }
 
     fun reloadConfig() {

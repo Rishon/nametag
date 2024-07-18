@@ -18,6 +18,7 @@ import systems.rishon.api.paper.color.ColorUtil
 import systems.rishon.nametag.Nametag
 import systems.rishon.nametag.handler.FileHandler
 import systems.rishon.nametag.handler.MainHandler
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class NametagEntity(private val player: Player) {
@@ -27,6 +28,9 @@ class NametagEntity(private val player: Player) {
 
     // FileHandler
     private val fileHandler = FileHandler.handler
+
+    // Data
+    private val canSee: MutableSet<UUID> = mutableSetOf()
 
     fun spawn(shouldCreate: Boolean) {
         if (shouldCreate) create()
@@ -44,8 +48,8 @@ class NametagEntity(private val player: Player) {
             Nametag.getPacketManager().ClientAddEntityPacket(player, passenger)
             Nametag.getPacketManager().sendUpdatePacket(player, passenger)
         }
-
         setPassengers(player.world)
+        this.canSee.add(player.uniqueId)
     }
 
     fun destroyForAll() {
@@ -53,6 +57,7 @@ class NametagEntity(private val player: Player) {
             this.passengers.forEach { passenger ->
                 Nametag.getPacketManager().ClientRemoveEntityPacket(player, passenger.id)
             }
+            this.canSee.remove(player.uniqueId)
         }
     }
 
@@ -91,7 +96,7 @@ class NametagEntity(private val player: Player) {
         lines.forEach { text ->
             val entity = createEntity(
                 formatName(
-                    player, text.replace("{player_name}", player.name)
+                    player, applyPlaceholders(text, player)
                 )
             )
 
@@ -156,7 +161,7 @@ class NametagEntity(private val player: Player) {
                 JSONComponentSerializer.json().serialize(
                     ColorUtil.translate(
                         formatName(
-                            player, lines[index].replace("{player_name}", player.name)
+                            player, applyPlaceholders(lines[index], player)
                         )
                     )
                 )
@@ -172,6 +177,17 @@ class NametagEntity(private val player: Player) {
             this.passengers.forEach { passenger ->
                 worldPlayers.forEach { worldPlayer ->
                     if (!includeSelf && player.uniqueId == worldPlayer.uniqueId) return@forEach
+                    if (worldPlayer.location.distance(player.location) > FileHandler.handler.distanceViewNametags || !worldPlayer.canSee(
+                            player
+                        )
+                    ) {
+                        Nametag.getPacketManager().ClientRemoveEntityPacket(worldPlayer, passenger.id)
+                        this.canSee.remove(worldPlayer.uniqueId)
+                        return@forEach
+                    }
+
+                    if (this.canSee.add(worldPlayer.uniqueId)) spread(worldPlayer)
+
                     Nametag.getPacketManager().sendUpdatePacket(worldPlayer, passenger)
                 }
             }
@@ -195,5 +211,22 @@ class NametagEntity(private val player: Player) {
         } else {
             name
         }
+    }
+
+    private fun applyPlaceholders(string: String, player: Player): String {
+        var finalValue = string
+        // No need to check for hook
+        finalValue = finalValue.replace("{player_name}", player.name)
+
+        // If LuckPerms is hooked
+        val luckPermsAPI = MainHandler.getHandler().luckPermsAPI
+        if (luckPermsAPI != null) {
+            val userData = luckPermsAPI.getUserManager().getUser(player.uniqueId)
+            if (userData != null) {
+                val cachedMetaData = userData.getCachedData().getMetaData()
+                finalValue = finalValue.replace("{luckperms_prefix}", cachedMetaData.prefix!!)
+            }
+        }
+        return finalValue
     }
 }

@@ -13,7 +13,6 @@ class UpdateTagTask(private val handler: MainHandler) : Runnable {
             nametagEntity.updateTagForPlayer()
             nametagEntity.updatePosition()
             nametagEntity.setPassengers(player.world)
-
         }
     }
 }

@@ -1,5 +1,7 @@
 package systems.rishon.nametag.handler
 
+import net.luckperms.api.LuckPerms
+import net.luckperms.api.LuckPermsProvider
 import org.bukkit.plugin.PluginManager
 import systems.rishon.nametag.Nametag
 import systems.rishon.nametag.command.NametagCommand
@@ -18,8 +20,9 @@ class MainHandler(val plugin: Nametag) : IHandler {
     // Data
     lateinit var nametagData: NametagData
 
-    // PlaceholderAPI
+    // Hooks
     var placeholderAPI: Boolean? = null
+    var luckPermsAPI: LuckPerms? = null
 
     override fun init() {
         handler = this
@@ -27,8 +30,9 @@ class MainHandler(val plugin: Nametag) : IHandler {
         // Initialize data
         this.nametagData = NametagData()
 
-        // Check if PlaceholderAPI is installed
+        // Initialize hooks
         this.placeholderAPI = this.plugin.server.pluginManager.getPlugin("PlaceholderAPI") != null
+        this.luckPermsAPI = LuckPermsProvider.get()
 
         // Register listeners and commands
         registerListeners()

@@ -23,9 +23,11 @@ repositories {
 dependencies {
     paperweight.paperDevBundle("1.20.6-R0.1-SNAPSHOT")
 
+    // Hooks
     compileOnly("me.clip:placeholderapi:2.11.5")
-    implementation("systems.rishon:utils-api:1.0.0")
+    compileOnly("net.luckperms:api:5.4")
 
+    implementation("systems.rishon:utils-api:1.0.0")
     implementation(project(":common"))
     implementation(project(":v1_20_6"))
     implementation(project(":v1_21"))

@@ -1,7 +1,7 @@
 hide-default-nametags: true
+distance-view-nametags: 24.0
 
 # PlaceholderAPI, MiniMessage support
-
 nametag-format:
   line-height: 0.3
   text-opacity-on-sneak: 0.5 # Between 0.0 and 1.0
