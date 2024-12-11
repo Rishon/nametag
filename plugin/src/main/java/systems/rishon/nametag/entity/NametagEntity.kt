@@ -124,6 +124,7 @@ class NametagEntity(private val player: Player) {
         // Bukkit
         bukkitPassenger.alignment = TextDisplay.TextAlignment.CENTER
         bukkitPassenger.lineWidth = 200
+        bukkitPassenger.isSeeThrough = true
         return passenger
     }
 
@@ -177,10 +178,7 @@ class NametagEntity(private val player: Player) {
             this.passengers.forEach { passenger ->
                 worldPlayers.forEach { worldPlayer ->
                     if (!includeSelf && player.uniqueId == worldPlayer.uniqueId) return@forEach
-                    if (worldPlayer.location.distance(player.location) > FileHandler.handler.distanceViewNametags || !worldPlayer.canSee(
-                            player
-                        )
-                    ) {
+                    if (worldPlayer.location.distance(player.location) > FileHandler.handler.distanceViewNametags || !worldPlayer.canSee(player) || player.gameMode == GameMode.SPECTATOR) {
                         Nametag.getPacketManager().ClientRemoveEntityPacket(worldPlayer, passenger.id)
                         this.canSee.remove(worldPlayer.uniqueId)
                         return@forEach

@@ -1,6 +1,7 @@
 package systems.rishon.nametag.listeners
 
 import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent
+import io.papermc.paper.event.player.AsyncChatEvent
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener

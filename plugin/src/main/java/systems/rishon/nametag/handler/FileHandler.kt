@@ -13,6 +13,7 @@ class FileHandler(private val plugin: Nametag) : IHandler {
     var nametagsFormat: List<String> = listOf()
     var nametagsHeight: Double = 0.0
     var textOpacity: Double = 0.0
+    var isSeeThrough: Boolean = false
 
     var distanceViewNametags: Double = 24.0
 
@@ -34,6 +35,7 @@ class FileHandler(private val plugin: Nametag) : IHandler {
         this.nametagsFormat = this.config.getStringList("nametag-format.lines").reversed()
         this.nametagsHeight = this.config.getDouble("nametag-format.line-height")
         this.textOpacity = this.config.getDouble("nametag-format.text-opacity-on-sneak")
+        this.isSeeThrough = this.config.getBoolean("nametag-format.see-through")
 
         this.distanceViewNametags = this.config.getDouble("distance-view-nametags")
     }

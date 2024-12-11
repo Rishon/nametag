@@ -5,6 +5,7 @@ distance-view-nametags: 24.0
 nametag-format:
   line-height: 0.3
   text-opacity-on-sneak: 0.5 # Between 0.0 and 1.0
+  see-through: true
   lines:
     - "<green>{player_name}"
     - "<red>Hello world!"
